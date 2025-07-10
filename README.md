@@ -134,11 +134,3 @@ The **Pose Analysis Application** leverages **TensorFlow\.js** and **MoveNet** t
 
 ---
 
-## ⚙️ Performance Characteristics
-
-* Processes video at **native resolution** (typically 720p)
-* Operates at **10–30 FPS**, hardware-dependent
-* Supports **unlimited session durations** (memory permitting)
-* Maintains **multi-session history** for progress tracking
-* Provides **instant visual feedback** with detailed quantitative analysis
-
