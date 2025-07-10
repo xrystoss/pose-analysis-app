@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Pose Analysis</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #4361ee;
+            --primary-dark: #3a56d4;
+            --primary-light: #e6e9ff;
+            --bg-color: #f8f9fa;
+            --text-color: #2b2d42;
+            --text-light: #6c757d;
+            --border-radius: 12px;
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --transition: all 0.2s ease-in-out;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.5;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-md);
+            overflow: hidden;
+            padding: 30px;
+        }
+
+        h1 {
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            color: var(--text-color);
+        }
+
+        h2 {
+            font-size: 1.4rem;
+            font-weight: 500;
+            margin: 2rem 0 1rem;
+            color: var(--text-color);
+        }
+
+        .video-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .video-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            box-shadow: var(--shadow-md);
+        }
+
+        #videoPlayer {
+            width: 100%;
+            height: auto;
+            background: #000;
+            display: block;
+        }
+
+        #videoCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            align-items: center;
+            margin: 1.5rem 0;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        button {
+            padding: 0.75rem 1.5rem;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 0.9375rem;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        button:hover {
+            background-color: var(--primary-dark);
+            transform: translateY(-1px);
+        }
+
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        button i {
+            font-size: 1.1rem;
+        }
+
+        .status {
+            margin: 1rem 0;
+            padding: 1rem;
+            border-radius: var(--border-radius);
+            background-color: var(--primary-light);
+            color: var(--primary-dark);
+            font-weight: 500;
+            text-align: center;
+            width: 100%;
+            max-width: 800px;
+        }
+
+        .thumbnails {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .thumbnail {
+            width: 100%;
+            height: 120px;
+            object-fit: cover;
+            cursor: pointer;
+            border-radius: var(--border-radius);
+            border: 2px solid #e9ecef;
+            transition: var(--transition);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .thumbnail:hover {
+            transform: scale(1.02);
+            box-shadow: var(--shadow-md);
+            border-color: var(--primary);
+        }
+
+        .graph-container {
+            width: 100%;
+            min-height: 400px;
+            margin-top: 2rem;
+            border-radius: var(--border-radius);
+            padding: 20px;
+            background-color: white;
+            box-shadow: var(--shadow-sm);
+        }
+
+        /* Loading animation */
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+
+            .thumbnails {
+                grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            }
+        }
+    </style>
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+
+<body>
+    <div class="container">
+
+        <div class="video-section">
+            <div class="video-container">
+                <video id="videoPlayer" controls playsinline></video>
+                <canvas id="videoCanvas"></canvas>
+            </div>
+            <input type="file" id="videoUploadInput" accept="video/*" style="display: none;">
+            <div class="controls">
+                <div class="status" id="status">Loading pose detection model...</div>
+                <div class="button-group">
+                    <button id="uploadVideoBtn">
+                        <i class="fas fa-upload"></i> Upload Video
+                    </button>
+                    <button id="exportDataBtn" disabled>
+                        <i class="fas fa-file-export"></i> Export Pose Data
+                    </button>
+                    <button id="generateGraphBtn" disabled>
+                        <i class="fas fa-chart-line"></i> Generate Movement Graph
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <h2>Available Videos</h2>
+        <div class="thumbnails" id="thumbnails"></div>
+
+        <h2>Movement Visualization</h2>
+        <div class="graph-container" id="graphContainer">
+            <p style="text-align: center; color: var(--text-light);">
+                Process a video to generate movement visualizations
+            </p>
+        </div>
+    </div>
+
+    <!-- Chart.js for graphing -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- TensorFlow libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection"></script>
+
+    <script>
+        // DOM elements
+        const videoPlayer = document.getElementById('videoPlayer');
+        const videoCanvas = document.getElementById('videoCanvas');
+        const thumbnailsContainer = document.getElementById('thumbnails');
+        const statusElement = document.getElementById('status');
+        const exportDataBtn = document.getElementById('exportDataBtn');
+        const generateGraphBtn = document.getElementById('generateGraphBtn');
+        const graphContainer = document.getElementById('graphContainer');
+        const uploadVideoBtn = document.getElementById('uploadVideoBtn');
+        const videoUploadInput = document.getElementById('videoUploadInput');
+
+        // Canvas context for drawing landmarks
+        const videoCtx = videoCanvas.getContext('2d');
+
+        // Data storage
+        let poseData = [];
+        let currentVideoName = '';
+        let movementChart = null;
+        let detector = null;
+
+        // Handle upload button click
+        uploadVideoBtn.addEventListener('click', () => {
+            videoUploadInput.click();
+        });
+
+        // Handle file selection
+        videoUploadInput.addEventListener('change', async (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            // Check if file is a video
+            if (!file.type.match('video.*')) {
+                statusElement.textContent = 'Please select a video file';
+                return;
+            }
+
+            statusElement.innerHTML = '<span class="loading"></span> Uploading video...';
+
+            try {
+                const formData = new FormData();
+                formData.append('video', file);
+
+                const response = await fetch('http://localhost:3000/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error('Upload failed');
+                }
+
+                const result = await response.json();
+                statusElement.textContent = `Video uploaded successfully: ${result.filename}`;
+
+                // Refresh the video list
+                loadVideoList();
+            } catch (error) {
+                console.error('Upload error:', error);
+                statusElement.textContent = 'Error uploading video';
+            } finally {
+                // Reset the input
+                videoUploadInput.value = '';
+            }
+        });
+        // Preload the MoveNet model when page loads
+        async function preloadMoveNet() {
+            statusElement.innerHTML = '<span class="loading"></span> Loading pose detection model...';
+            try {
+                await tf.setBackend('webgl');
+                await tf.ready();
+                console.log("TFJS Backend:", tf.getBackend());
+
+                const model = poseDetection.SupportedModels.MoveNet;
+                const detectorConfig = {
+                    modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING,
+                };
+                detector = await poseDetection.createDetector(model, detectorConfig);
+
+                // Warm-up with dummy image
+                const warmUpCanvas = document.createElement('canvas');
+                warmUpCanvas.width = 640;
+                warmUpCanvas.height = 480;
+                const ctx = warmUpCanvas.getContext('2d');
+                ctx.fillStyle = "black";
+                ctx.fillRect(0, 0, 640, 480);
+                const dummyImage = ctx.getImageData(0, 0, 640, 480);
+                await detector.estimatePoses(dummyImage);
+
+                statusElement.textContent = 'Pose model loaded. Select a video to analyze.';
+                console.log('Pose detection model loaded and warmed up');
+            } catch (error) {
+                console.error('Error loading pose detection model:', error);
+                statusElement.textContent = 'Error loading pose detection model';
+            }
+        }
+
+        // Load video list from the server
+        async function loadVideoList() {
+            try {
+                statusElement.innerHTML = '<span class="loading"></span> Loading video list...';
+                const response = await fetch('http://localhost:3000/api/videos');
+                const videoFiles = await response.json();
+                populateThumbnails(videoFiles);
+
+                // Only update status if model is already loaded
+                if (detector) {
+                    statusElement.textContent = 'Select a video to analyze';
+                }
+            } catch (error) {
+                console.error('Error loading videos:', error);
+                statusElement.textContent = 'Error loading video list';
+            }
+        }
+
+        // Populate the thumbnails
+        function populateThumbnails(videos) {
+            thumbnailsContainer.innerHTML = '';
+
+            videos.forEach((video) => {
+                const videoElement = document.createElement('video');
+                videoElement.src = `/videos/${video}`;
+                videoElement.classList.add('thumbnail');
+                videoElement.muted = true;
+                videoElement.playsInline = true;
+
+                videoElement.addEventListener('loadeddata', () => {
+                    videoElement.currentTime = 1;
+                });
+
+                videoElement.addEventListener('click', () => {
+                    currentVideoName = video;
+                    videoPlayer.src = `/videos/${video}`;
+                    statusElement.textContent = `Loaded: ${video}`;
+                    exportDataBtn.disabled = true;
+                    generateGraphBtn.disabled = true;
+                    poseData = [];
+
+                    if (movementChart) {
+                        movementChart.destroy();
+                        movementChart = null;
+                    }
+                });
+
+                thumbnailsContainer.appendChild(videoElement);
+            });
+        }
+
+        // Set canvas size to match the video
+        function setCanvasSize(canvas, element) {
+            canvas.width = element.videoWidth || element.width;
+            canvas.height = element.videoHeight || element.height;
+        }
+
+        // Process the video for pose detection
+        async function processVideo() {
+            if (!detector) {
+                statusElement.textContent = 'Pose model not loaded yet. Please wait...';
+                return;
+            }
+
+            setCanvasSize(videoCanvas, videoPlayer);
+            statusElement.textContent = `Processing: ${currentVideoName}`;
+            exportDataBtn.disabled = true;
+            generateGraphBtn.disabled = true;
+            poseData = [];
+
+            let isProcessing = false;
+            let lastProcessedTime = -1;
+
+            async function processFrame() {
+                if (videoPlayer.paused || videoPlayer.ended || isProcessing) {
+                    return;
+                }
+
+                if (Math.abs(videoPlayer.currentTime - lastProcessedTime) > 0.03) {
+                    isProcessing = true;
+                    lastProcessedTime = videoPlayer.currentTime;
+
+                    try {
+                        const poses = await detector.estimatePoses(videoPlayer);
+                        drawPoses(poses, videoCtx, videoPlayer);
+
+                        if (poses.length > 0) {
+                            // Mirror keypoints + swap left/right
+                            const mirroredIndices = {
+                                1: 2, 2: 1, 3: 4, 4: 3,
+                                5: 6, 6: 5, 7: 8, 8: 7,
+                                9: 10, 10: 9, 11: 12, 12: 11,
+                                13: 14, 14: 13, 15: 16, 16: 15
+                            };
+                            const canvasWidth = videoCanvas.width;
+                            const mirroredPoses = poses.map(pose => {
+                                const newKeypoints = pose.keypoints.map((kp, idx) => {
+                                    const swapIdx = mirroredIndices[idx] ?? idx;
+                                    const sourceKp = pose.keypoints[swapIdx];
+                                    return {
+                                        ...sourceKp,
+                                        y: videoCanvas.height - sourceKp.y   // flip Y
+                                    };
+                                });
+                                return {
+                                    ...pose,
+                                    keypoints: newKeypoints
+                                };
+                            });
+
+                            poseData.push({
+                                timestamp: videoPlayer.currentTime,
+                                poses: mirroredPoses
+                            });
+
+                            // Update status with progress
+                            const progress = (videoPlayer.currentTime / videoPlayer.duration) * 100;
+                            statusElement.textContent = `Processing: ${progress.toFixed(1)}% complete`;
+                        }
+                    } catch (error) {
+                        console.error('Error processing frame:', error);
+                    } finally {
+                        isProcessing = false;
+                    }
+                }
+
+                requestAnimationFrame(processFrame);
+            }
+
+            requestAnimationFrame(processFrame);
+
+            videoPlayer.addEventListener('ended', () => {
+                statusElement.textContent = `Processing complete: ${poseData.length} frames analyzed`;
+                exportDataBtn.disabled = false;
+                generateGraphBtn.disabled = false;
+            });
+        }
+
+        // Draw the poses on the canvas
+        function drawPoses(poses, ctx, element) {
+            ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+            ctx.drawImage(element, 0, 0, ctx.canvas.width, ctx.canvas.height);
+
+            const connections = [
+                [0, 1], [0, 2], [1, 3], [2, 4], [5, 6], [5, 7], [7, 9], [6, 8], [8, 10],
+                [5, 11], [6, 12], [11, 12], [11, 13], [13, 15], [12, 14], [14, 16],
+            ];
+
+            poses.forEach(pose => {
+                pose.keypoints.forEach(keypoint => {
+                    if (keypoint.score > 0.3) {
+                        ctx.beginPath();
+                        ctx.arc(keypoint.x, keypoint.y, 5, 0, 2 * Math.PI);
+                        ctx.fillStyle = 'red';
+                        ctx.fill();
+                    }
+                });
+
+                connections.forEach(([startIdx, endIdx]) => {
+                    const start = pose.keypoints[startIdx];
+                    const end = pose.keypoints[endIdx];
+                    if (start.score > 0.3 && end.score > 0.3) {
+                        ctx.beginPath();
+                        ctx.moveTo(start.x, start.y);
+                        ctx.lineTo(end.x, end.y);
+                        ctx.strokeStyle = 'green';
+                        ctx.lineWidth = 2;
+                        ctx.stroke();
+                    }
+                });
+            });
+        }
+
+        // Export data to JSON file
+        exportDataBtn.addEventListener('click', () => {
+            if (poseData.length === 0) {
+                statusElement.textContent = 'No data to export';
+                return;
+            }
+            console.log('Export button clicked');  // ← ADD THIS
+
+            // Keypoint names (MoveNet model's 17 keypoints)
+            const keypointNames = [
+                'nose', 'left_eye', 'right_eye', 'left_ear', 'right_ear',
+                'left_shoulder', 'right_shoulder', 'left_elbow', 'right_elbow',
+                'left_wrist', 'right_wrist', 'left_hip', 'right_hip',
+                'left_knee', 'right_knee', 'left_ankle', 'right_ankle'
+            ];
+
+            // Transform the data to match the desired format
+            const formattedData = poseData.map(frame => ({
+                video: currentVideoName.replace(/\.[^/.]+$/, ''),  // Include video name
+                timestamp: frame.timestamp,
+                poses: frame.poses.map(pose => ({
+                    keypoints: pose.keypoints.map((kp, idx) => ({
+                        y: kp.y,
+                        x: kp.x,
+                        score: kp.score,
+                        name: keypointNames[idx]
+                    })),
+                    score: pose.score || 0.5
+                })),
+                motion: true
+            }));
+
+            fetch(`${window.location.origin}/api/export`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formattedData)
+            })
+                .then(response => response.json())
+                .then(result => {
+                    console.log('Data exported successfully:', result);
+                    statusElement.textContent = `Data saved to server as ${result.filename}`;
+                })
+                .catch(error => {
+                    console.error('Error exporting data:', error);
+                    statusElement.textContent = 'Failed to export data';
+                });
+        });
+
+        // Generate movement graphs for all body parts
+        generateGraphBtn.addEventListener('click', () => {
+            if (poseData.length === 0) {
+                statusElement.textContent = 'No data to visualize';
+                return;
+            }
+
+            // Clear previous content
+            graphContainer.innerHTML = '<h2 style="text-align: center; margin-bottom: 20px;">Body Part Movement Analysis</h2>';
+
+            // Keypoint names (MoveNet model's 17 keypoints)
+            const keypointNames = [
+                'nose', 'left_eye', 'right_eye', 'left_ear', 'right_ear',
+                'left_shoulder', 'right_shoulder', 'left_elbow', 'right_elbow',
+                'left_wrist', 'right_wrist', 'left_hip', 'right_hip',
+                'left_knee', 'right_knee', 'left_ankle', 'right_ankle'
+            ];
+
+            const timestamps = poseData.map(frame => frame.timestamp.toFixed(2));
+
+            const chartsContainer = document.createElement('div');
+            chartsContainer.style.display = 'grid';
+            chartsContainer.style.gridTemplateColumns = 'repeat(1, 1fr)';
+            chartsContainer.style.gap = '30px';
+            chartsContainer.style.marginTop = '20px';
+            graphContainer.appendChild(chartsContainer);
+
+            keypointNames.forEach((name, index) => {
+                const keypointX = poseData.map(frame =>
+                    frame.poses[0]?.keypoints[index]?.x || 0);
+
+                const keypointY = poseData.map(frame =>
+                    frame.poses[0]?.keypoints[index]?.y || 0);
+
+                const keypointScores = poseData.map(frame =>
+                    frame.poses[0]?.keypoints[index]?.score || 0);
+
+                const chartContainer = document.createElement('div');
+                chartContainer.style.border = '1px solid #ddd';
+                chartContainer.style.padding = '20px';
+                chartContainer.style.borderRadius = '8px';
+                chartContainer.style.backgroundColor = '#f9f9f9';
+                chartContainer.style.boxShadow = '0 2px 5px rgba(0,0,0,0.1)';
+
+                const title = document.createElement('h3');
+                title.textContent = `${name.charAt(0).toUpperCase() + name.slice(1).replace('_', ' ')} Movement`;
+                title.style.margin = '0 0 15px 0';
+                title.style.textAlign = 'center';
+                title.style.color = '#333';
+                chartContainer.appendChild(title);
+
+                const canvasContainer = document.createElement('div');
+                canvasContainer.style.position = 'relative';
+                canvasContainer.style.height = '300px';
+                canvasContainer.style.width = '100%';
+
+                const ctx = document.createElement('canvas');
+                ctx.style.maxWidth = '100%';
+                canvasContainer.appendChild(ctx);
+                chartContainer.appendChild(canvasContainer);
+                chartsContainer.appendChild(chartContainer);
+
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: timestamps,
+                        datasets: [
+                            {
+                                label: 'X position',
+                                data: keypointX,
+                                borderColor: 'rgb(255, 99, 132)',
+                                backgroundColor: 'rgba(255, 99, 132, 0.1)',
+                                borderWidth: 2,
+                                tension: 0.1,
+                                yAxisID: 'y'
+                            },
+                            {
+                                label: 'Y position',
+                                data: keypointY,
+                                borderColor: 'rgb(54, 162, 235)',
+                                backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                                borderWidth: 2,
+                                tension: 0.1,
+                                yAxisID: 'y1'
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: {
+                            mode: 'index',
+                            intersect: false,
+                        },
+                        scales: {
+                            y: {
+                                type: 'linear',
+                                display: true,
+                                position: 'left',
+                                title: {
+                                    display: true,
+                                    text: 'X Position',
+                                    font: {
+                                        size: 14,
+                                        weight: 'bold'
+                                    }
+                                },
+                                ticks: {
+                                    font: {
+                                        size: 12
+                                    }
+                                }
+                            },
+                            y1: {
+                                type: 'linear',
+                                display: true,
+                                position: 'right',
+                                title: {
+                                    display: true,
+                                    text: 'Y Position',
+                                    font: {
+                                        size: 14,
+                                        weight: 'bold'
+                                    }
+                                },
+                                ticks: {
+                                    font: {
+                                        size: 12
+                                    }
+                                },
+                                grid: {
+                                    drawOnChartArea: false
+                                }
+                            },
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: 'Time (seconds)',
+                                    font: {
+                                        size: 14,
+                                        weight: 'bold'
+                                    }
+                                },
+                                ticks: {
+                                    font: {
+                                        size: 12
+                                    }
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                                labels: {
+                                    font: {
+                                        size: 14
+                                    },
+                                    padding: 20
+                                }
+                            },
+                            tooltip: {
+                                bodyFont: {
+                                    size: 14
+                                },
+                                titleFont: {
+                                    size: 14
+                                },
+                                callbacks: {
+                                    label: function (context) {
+                                        let label = context.dataset.label || '';
+                                        if (label) {
+                                            label += ': ';
+                                        }
+                                        label += Math.round(context.parsed.y * 100) / 100;
+                                        return label;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            });
+
+            // Add summary statistics section
+            const statsContainer = document.createElement('div');
+            statsContainer.style.marginTop = '40px';
+            statsContainer.style.marginBottom = '30px';
+            statsContainer.innerHTML = `
+                <h2 style="text-align: center; margin-bottom: 20px;">Movement Summary Statistics</h2>
+                <div id="statsTable" style="overflow-x: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);"></div>
+            `;
+            graphContainer.appendChild(statsContainer);
+
+            // Calculate and display statistics
+            displaySummaryStatistics(keypointNames);
+
+            statusElement.textContent = 'All body part movement graphs generated';
+        });
+
+        // Function to display summary statistics
+        function displaySummaryStatistics(keypointNames) {
+            const statsTable = document.getElementById('statsTable');
+            if (!statsTable) return;
+
+            // Create table
+            const table = document.createElement('table');
+            table.style.width = '100%';
+            table.style.borderCollapse = 'collapse';
+            table.style.textAlign = 'center';
+
+            // Create header
+            const thead = document.createElement('thead');
+            const headerRow = document.createElement('tr');
+            headerRow.style.backgroundColor = '#4CAF50';
+            headerRow.style.color = 'white';
+
+            const headers = ['Body Part', 'Avg X', 'Avg Y', 'X Range', 'Y Range', 'Avg Score'];
+            headers.forEach(headerText => {
+                const th = document.createElement('th');
+                th.textContent = headerText;
+                th.style.padding = '12px';
+                th.style.border = '1px solid #ddd';
+                headerRow.appendChild(th);
+            });
+            thead.appendChild(headerRow);
+            table.appendChild(thead);
+
+            // Create body
+            const tbody = document.createElement('tbody');
+
+            keypointNames.forEach((name, index) => {
+                const xValues = poseData.map(frame =>
+                    frame.poses[0]?.keypoints[index]?.x || 0);
+                const yValues = poseData.map(frame =>
+                    videoCanvas.height - (frame.poses[0]?.keypoints[index]?.y || 0));
+
+                const scores = poseData.map(frame =>
+                    frame.poses[0]?.keypoints[index]?.score || 0);
+
+                const avgX = xValues.reduce((sum, val) => sum + val, 0) / xValues.length;
+                const avgY = yValues.reduce((sum, val) => sum + val, 0) / yValues.length;
+                const xRange = Math.max(...xValues) - Math.min(...xValues);
+                const yRange = Math.max(...yValues) - Math.min(...yValues);
+                const avgScore = scores.reduce((sum, val) => sum + val, 0) / scores.length;
+
+                const row = document.createElement('tr');
+                row.style.borderBottom = '1px solid #ddd';
+                row.style.backgroundColor = index % 2 === 0 ? '#f9f9f9' : 'white';
+
+                const cells = [
+                    name.replace('_', ' '),
+                    avgX.toFixed(2),
+                    avgY.toFixed(2),
+                    xRange.toFixed(2),
+                    yRange.toFixed(2),
+                    avgScore.toFixed(3)
+                ];
+
+                cells.forEach(cellText => {
+                    const td = document.createElement('td');
+                    td.textContent = cellText;
+                    td.style.padding = '10px';
+                    td.style.border = '1px solid #ddd';
+                    row.appendChild(td);
+                });
+
+                tbody.appendChild(row);
+            });
+
+            table.appendChild(tbody);
+            statsTable.appendChild(table);
+        }
+
+        // Start processing when video is played (unchanged)
+        videoPlayer.addEventListener('play', () => {
+            processVideo();
+        });
+
+        // Initialize the app
+        window.addEventListener('load', () => {
+            // Start loading the model immediately
+            preloadMoveNet();
+            // Then load the video list
+            loadVideoList();
+        });
+    </script>
+</body>
+
+</html>

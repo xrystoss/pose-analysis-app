@@ -1,0 +1,1261 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Webcam App</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+
+    #generateGraphBtn {
+      margin: 20px auto;
+      padding: 16px 32px;
+      font-size: 20px;
+      font-weight: bold;
+      background-color: #2196F3;
+      /* Blue color */
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      min-width: 180px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      transition: all 0.3s ease;
+      display: inline-block;
+      /* Allows buttons to sit side-by-side */
+    }
+
+    #generateGraphBtn:hover {
+      background-color: #0b7dda;
+      /* Darker blue on hover */
+      transform: translateY(-2px);
+      box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+    }
+
+    /* Container for side-by-side buttons */
+    .button-container {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      margin: 20px auto;
+      width: 100%;
+      max-width: 800px;
+    }
+
+    #loopSelectionContainer {
+      margin: 30px auto;
+      text-align: center;
+      padding: 15px;
+      background: #f8f9fa;
+      border-radius: 10px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      width: 100%;
+      max-width: 600px;
+    }
+
+    #loopSelectionContainer label {
+      font-size: 18px;
+      font-weight: bold;
+      color: #333;
+      margin-right: 10px;
+      font-family: 'Arial', sans-serif;
+    }
+
+    #loopSelector {
+      padding: 12px 20px;
+      font-size: 16px;
+      border: 2px solid #2196F3;
+      border-radius: 8px;
+      background-color: white;
+      color: #333;
+      cursor: pointer;
+      min-width: 200px;
+      transition: all 0.3s ease;
+    }
+
+    #loopSelector:hover {
+      border-color: #0b7dda;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    #loopSelector:focus {
+      outline: none;
+      border-color: #0b7dda;
+      box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.2);
+    }
+
+    #graphContainer {
+      width: 100%;
+      max-width: 1200px;
+      margin: 20px auto;
+      padding: 20px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+
+    #exportDataBtn {
+      margin: 20px auto;
+      padding: 16px 32px;
+      font-size: 20px;
+      font-weight: bold;
+      background-color: #2196F3;
+      /* Blue color */
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      min-width: 180px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      transition: all 0.3s ease;
+      display: inline-block;
+    }
+
+    #exportDataBtn:hover {
+      background-color: #0b7dda;
+      /* Darker blue on hover */
+      transform: translateY(-2px);
+      box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+    }
+
+    .chart-container {
+      position: relative;
+      height: 300px;
+      margin-bottom: 30px;
+    }
+
+    #container {
+      display: flex;
+      gap: 30px;
+      /* Increased from 20px */
+      margin-bottom: 30px;
+      align-items: flex-start;
+    }
+
+    .video-section,
+    .camera-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 15px 25px 25px;
+      /* Top padding reduced */
+    }
+
+
+    .camera-section .status-message {
+      margin-top: 15px;
+      padding: 12px;
+      background: #e9f5ff;
+      border-left: 4px solid #2196F3;
+      border-radius: 4px;
+      color: #333;
+      font-size: 14px;
+      width: 100%;
+      display: none;
+      /* Hidden by default */
+    }
+
+    #videoPlayer {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    #cameraFeed {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transform: scaleX(-1);
+
+    }
+
+    #comparisonResults table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+    }
+
+    #comparisonResults th,
+    #comparisonResults td {
+      padding: 8px;
+      border: 1px solid #ddd;
+      text-align: center;
+    }
+
+    #comparisonResults th {
+      background-color: #f2f2f2;
+      font-weight: bold;
+    }
+
+    .thumbnails {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 12px;
+      margin-top: 20px;
+      width: 100%;
+    }
+
+    .thumbnail {
+      width: 100%;
+      height: 90px;
+      object-fit: cover;
+      border-radius: 6px;
+      transition: transform 0.3s, box-shadow 0.3s;
+      cursor: pointer;
+      border: 2px solid transparent;
+    }
+
+    .thumbnail:hover {
+      transform: scale(1.05);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      border-color: #2196F3;
+    }
+
+    .video-wrapper,
+    .camera-wrapper {
+      position: relative;
+      width: 720px;
+      height: 540px;
+      background: #000;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+      display: flex;
+      /* New */
+      justify-content: center;
+      /* New */
+      align-items: center;
+      /* New */
+
+    }
+
+    canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    .controls {
+      background: #f8f9fa;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      margin-top: 10px;
+      width: 100%;
+      max-width: 640px;
+    }
+
+    .controls label {
+      display: flex;
+      align-items: center;
+      margin: 10px 0;
+      cursor: pointer;
+      font-size: 16px;
+      color: #333;
+      transition: all 0.2s;
+    }
+
+    .controls label:hover {
+      color: #2196F3;
+    }
+
+    input[type="radio"] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border: 2px solid #2196F3;
+      border-radius: 50%;
+      margin-right: 10px;
+      position: relative;
+      cursor: pointer;
+    }
+
+    input[type="radio"]:checked {
+      background-color: #2196F3;
+    }
+
+    input[type="radio"]:checked::after {
+      content: '';
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      background: white;
+      border-radius: 50%;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    .input-wrapper {
+      margin-top: 15px;
+      display: flex;
+      align-items: center;
+    }
+
+    .input-wrapper label {
+      font-weight: bold;
+      margin-right: 10px;
+      color: #555;
+    }
+
+
+    #loopTimes {
+      padding: 10px 15px;
+      border: 2px solid #ddd;
+      border-radius: 6px;
+      font-size: 16px;
+      width: 80px;
+      transition: all 0.3s;
+    }
+
+    #loopTimes:focus {
+      border-color: #2196F3;
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.2);
+    }
+
+    /* Base button styles */
+    .control-button {
+      margin: 20px auto;
+      padding: 16px 32px;
+      font-size: 20px;
+      font-weight: bold;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      min-width: 180px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      transition: all 0.3s ease;
+      display: block;
+      /* Ensures buttons are visible */
+    }
+
+    /* Start button - green */
+    #startButton {
+      background-color: #4CAF50;
+      color: white;
+    }
+
+    /* Stop button - red */
+    #stopButton {
+      background-color: #ff3333;
+      color: white;
+    }
+
+    /* Hover states */
+    #startButton:hover {
+      background-color: #3e8e41;
+      transform: translateY(-2px);
+    }
+
+    #stopButton:hover {
+      background-color: #cc0000;
+      transform: translateY(-2px);
+    }
+
+    /* Disabled state */
+    #startButton:disabled {
+      background-color: #cccccc;
+      cursor: not-allowed;
+    }
+
+    .loading-message {
+      margin-top: 20px;
+      color: #666;
+      font-style: italic;
+      text-align: center;
+
+    }
+  </style>
+</head>
+
+<body>
+  <div id="container">
+    <!-- Video Player Section -->
+    <div class="video-section">
+      <div class="video-wrapper">
+        <video id="videoPlayer" controls>
+          <source id="videoSource" type="video/mp4">
+          Your browser does not support the video tag.
+        </video>
+        <canvas id="videoCanvas"></canvas>
+      </div>
+      <br>
+
+      <div class="controls">
+        <!-- Video Loop Options -->
+        <label>
+          <input type="radio" name="loopMode" id="infiniteLoop" checked> Infinite Loop
+        </label>
+        <label>
+          <input type="radio" name="loopMode" id="fixedLoop"> Loop Set Times
+        </label>
+
+        <div class="input-wrapper">
+          <label for="loopTimes">Loop Times:</label>
+          <input type="number" id="loopTimes" min="1" value="1" disabled>
+        </div>
+
+        <div class="thumbnails" id="thumbnails"></div>
+      </div>
+    </div>
+
+    <!-- Camera Section -->
+    <div class="camera-section">
+      <div class="camera-wrapper">
+        <video id="cameraFeed" autoplay playsinline></video>
+        <canvas id="cameraCanvas"></canvas>
+      </div>
+      <br>
+
+      <div class="controls">
+        <button class="control-button" id="startButton">Start</button>
+        <button class="control-button" id="stopButton" style="display: none;">Stop</button>
+        <div id="loadingMessage" class="loading-message">Loading pose detection model...</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Graph Generation Button -->
+  <div class="button-container">
+    <button id="generateGraphBtn">Generate Movement Graphs</button>
+    <button id="exportDataBtn">Export Data as JSON</button>
+  </div>
+  <div id="loopSelectionContainer">
+    <label for="loopSelector">View Results For:</label>
+    <select id="loopSelector">
+      <!-- Options will be added dynamically -->
+    </select>
+  </div>
+  <!-- Comparison Results Table (now visible by default) -->
+  <div id="comparisonResults"
+    style="width: 100%; max-width: 1200px; margin: 20px auto; padding: 20px; background: white; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
+    <h2 style="text-align: center;">Pose Comparison Results</h2>
+    <div id="resultsContent"></div>
+  </div>
+
+  <!-- Graph Container -->
+  <div id="graphContainer"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection"></script>
+
+  <script>
+    // Get DOM elements
+    const videoPlayer = document.getElementById('videoPlayer');
+    const infiniteLoopRadio = document.getElementById('infiniteLoop');
+    const fixedLoopRadio = document.getElementById('fixedLoop');
+    const loopTimesInput = document.getElementById('loopTimes');
+    const stopButton = document.getElementById('stopButton');
+    const cameraFeed = document.getElementById('cameraFeed');
+    const videoCanvas = document.getElementById('videoCanvas');
+    const cameraCanvas = document.getElementById('cameraCanvas');
+    const thumbnailsContainer = document.getElementById('thumbnails');
+    const loadingMessage = document.getElementById('loadingMessage');
+    const startButton = document.getElementById('startButton');
+    const generateGraphBtn = document.getElementById('generateGraphBtn');
+    const graphContainer = document.getElementById('graphContainer');
+
+    // Initialize variables
+    let dataBuffer = [];
+    let loopCount = 0;
+    let maxLoops = Infinity;
+    let trackingActive = false;
+    let poseDetector = null;
+    let previousFrame = null;
+    let poseData = [];
+    let loopData = []; // Array to store data for each loop
+    let currentLoop = 0; // Track current loop during recording
+    let loopResults = []; // Store comparison results for each loop
+
+    // Keypoint names (MoveNet model's 17 keypoints)
+    const keypointNames = [
+      'nose', 'left_eye', 'right_eye', 'left_ear', 'right_ear',
+      'left_shoulder', 'right_shoulder', 'left_elbow', 'right_elbow',
+      'left_wrist', 'right_wrist', 'left_hip', 'right_hip',
+      'left_knee', 'right_knee', 'left_ankle', 'right_ankle'
+    ];
+
+    // Canvas contexts
+    const videoCtx = videoCanvas.getContext('2d');
+    const cameraCtx = cameraCanvas.getContext('2d');
+
+    function normalizeDataLength(currentData, referenceData) {
+      const desiredLength = referenceData.length;
+      if (currentData.length === 0 || desiredLength === 0) return currentData;
+      if (currentData.length === desiredLength) return currentData;
+
+      const scaledData = [];
+      for (let i = 0; i < desiredLength; i++) {
+        const sourceIndex = Math.floor((i / (desiredLength - 1)) * (currentData.length - 1));
+        scaledData.push(currentData[sourceIndex]);
+      }
+      return scaledData;
+    }
+
+    function exportData(poses, motion) {
+      const timestamp = videoPlayer.currentTime;
+      const formattedData = {
+        timestamp: timestamp,
+        poses: poses.map(pose => ({
+          keypoints: pose.keypoints.map((kp, idx) => ({
+            y: cameraCanvas.height - (kp?.y || 0),  // ← flipped Y
+            x: cameraCanvas.width - kp.x, // ← mirrored X
+            score: kp.score,
+            name: keypointNames[idx]
+          })),
+          score: pose.score || 0.5
+        })),
+        motion: motion
+      };
+      poseData.push(formattedData);
+      dataBuffer.push(formattedData);
+
+      if (dataBuffer.length >= 10) {
+        const batchToSend = [...dataBuffer];
+        dataBuffer = [];
+        fetch('http://127.0.0.1:3000/api/export', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(batchToSend),
+        })
+          .then(response => response.json())
+          .then(responseData => {
+            console.log('Data exported:', responseData);
+          })
+          .catch(error => console.error('Error exporting data:', error));
+      }
+    }
+
+    function generateGraphs() {
+      const selector = document.getElementById('loopSelector');
+      const selectedValue = selector.value;
+      let dataToUse = [];
+      let titleSuffix = '';
+
+      if (selectedValue === 'overall') {
+        dataToUse = loopData.flatMap(loop => loop.data);
+        titleSuffix = ' (All Loops)';
+      } else {
+        const loopNum = parseInt(selectedValue);
+        const loop = loopData.find(l => l.loopNumber === loopNum);
+        dataToUse = loop ? loop.data : [];
+        titleSuffix = ` (Loop ${loopNum})`;
+      }
+
+      if (dataToUse.length === 0) {
+        graphContainer.innerHTML = '<p>No data available to generate graphs</p>';
+        return;
+      }
+
+      // Clear previous content - we'll only show charts now
+      graphContainer.innerHTML = `<h2 style="text-align: center; margin-bottom: 20px;">Body Part Movement Analysis ${titleSuffix}</h2>`;
+
+      // Create container for all charts
+      const chartsContainer = document.createElement('div');
+      chartsContainer.style.display = 'grid';
+      chartsContainer.style.gridTemplateColumns = 'repeat(2, 1fr)';
+      chartsContainer.style.gap = '20px';
+      chartsContainer.style.marginTop = '20px';
+      graphContainer.appendChild(chartsContainer);
+
+      const canvasHeight = cameraCanvas.height;
+
+      keypointNames.forEach((name, index) => {
+        const keypointX = dataToUse.map(frame => {
+          const pose = frame.poses[0];
+          return pose?.keypoints[index]?.x || 0;
+        });
+        const keypointY = dataToUse.map(frame => {
+          const pose = frame.poses[0];
+          return pose?.keypoints[index]?.y || 0;
+        });
+        const timestamps = dataToUse.map(frame => frame.timestamp.toFixed(2));
+
+        const chartDiv = document.createElement('div');
+        chartDiv.style.border = '1px solid #ddd';
+        chartDiv.style.padding = '15px';
+        chartDiv.style.borderRadius = '8px';
+        chartDiv.style.backgroundColor = '#f9f9f9';
+
+        const title = document.createElement('h3');
+        title.textContent = `${name.replace('_', ' ').toUpperCase()}`;
+        title.style.margin = '0 0 10px 0';
+        title.style.textAlign = 'center';
+        chartDiv.appendChild(title);
+
+        const canvasContainer = document.createElement('div');
+        canvasContainer.className = 'chart-container';
+        const canvas = document.createElement('canvas');
+        canvasContainer.appendChild(canvas);
+        chartDiv.appendChild(canvasContainer);
+
+        chartsContainer.appendChild(chartDiv);
+
+        new Chart(canvas, {
+          type: 'line',
+          data: {
+            labels: timestamps,
+            datasets: [
+              {
+                label: 'X Position',
+                data: keypointX,
+                borderColor: 'rgb(255, 99, 132)',
+                backgroundColor: 'rgba(255, 99, 132, 0.1)',
+                borderWidth: 2,
+                tension: 0.1
+              },
+              {
+                label: 'Y Position',
+                data: keypointY,
+                borderColor: 'rgb(54, 162, 235)',
+                backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                borderWidth: 2,
+                tension: 0.1
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { position: 'top' },
+              tooltip: {
+                callbacks: {
+                  label: function (context) {
+                    return `${context.dataset.label}: ${context.parsed.y.toFixed(1)}`;
+                  }
+                }
+              }
+            },
+            scales: {
+              x: {
+                title: {
+                  display: true,
+                  text: 'Time (seconds)'
+                }
+              },
+              y: {
+                title: {
+                  display: true,
+                  text: 'Position (pixels, flipped)'
+                }
+              }
+            }
+          }
+        });
+      });
+    }
+
+    function exportDataAsJSON() {
+      const selector = document.getElementById('loopSelector');
+      const selectedValue = selector.value;
+      let dataToExport;
+      if (selectedValue === 'overall') {
+        dataToExport = {
+          allLoops: loopData,
+          comparisonResults: loopResults
+        };
+      } else {
+        const loopNum = parseInt(selectedValue);
+        const loop = loopData.find(l => l.loopNumber === loopNum);
+        dataToExport = loop ? {
+          loopNumber: loop.loopNumber,
+          loopData: loop.data,
+          comparisonResults: loopResults.find(lr => lr.loopNumber === loopNum)?.results || []
+        } : null;
+      }
+
+      if (!dataToExport) {
+        alert("No data available to export");
+        return;
+      }
+
+      const dataStr = JSON.stringify(dataToExport, null, 2);
+      const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+      const exportFileDefaultName = `pose-data-${new Date().toISOString()}${selectedValue === 'overall' ? '' : '-loop' + selectedValue}.json`;
+
+      const linkElement = document.createElement('a');
+      linkElement.setAttribute('href', dataUri);
+      linkElement.setAttribute('download', exportFileDefaultName);
+      linkElement.click();
+    }
+
+    function updateLoopMode() {
+      if (infiniteLoopRadio.checked) {
+        loopTimesInput.disabled = true;
+        maxLoops = Infinity;
+      } else {
+        loopTimesInput.disabled = false;
+        maxLoops = parseInt(loopTimesInput.value, 10) || 1;
+      }
+    }
+
+    videoPlayer.addEventListener('ended', () => {
+      if (!trackingActive) return;
+
+      loopCount++;
+      currentLoop = loopCount;
+
+      // Save data for this completed loop
+      if (poseData.length > 0) {
+        loopData.push({ loopNumber: loopCount, data: [...poseData] });
+        poseData = [];
+      }
+
+      if (infiniteLoopRadio.checked) {
+        // For infinite loops, just restart the video
+        videoPlayer.currentTime = 0;
+        videoPlayer.play();
+      } else if (loopCount < maxLoops) {
+        // For fixed loops, continue until max loops reached
+        videoPlayer.currentTime = 0;
+        videoPlayer.play();
+      } else {
+        // Fixed loops completed
+        stopTracking();
+      }
+    });
+
+    async function startCamera() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        cameraFeed.srcObject = stream;
+        cameraFeed.play();
+      } catch (error) {
+        console.error("Error accessing camera:", error);
+      }
+    }
+
+    async function loadVideoList() {
+      try {
+        const response = await fetch('http://localhost:3000/api/videos');
+        const videoFiles = await response.json();
+        if (videoFiles.length > 0) {
+          populateThumbnails(videoFiles);
+        } else {
+          console.warn("No videos found!");
+        }
+      } catch (error) {
+        console.error("Error loading videos:", error);
+      }
+    }
+
+    function populateThumbnails(videos) {
+      thumbnailsContainer.innerHTML = '';
+      videos.forEach(video => {
+        const videoElement = document.createElement('video');
+        videoElement.src = `/videos/${video}`;
+        videoElement.classList.add('thumbnail');
+        videoElement.muted = true;
+        videoElement.playsInline = true;
+
+        videoElement.addEventListener('loadeddata', () => {
+          videoElement.currentTime = 1;
+        });
+
+        videoElement.addEventListener('click', () => {
+          videoPlayer.src = `/videos/${video}`;
+          videoPlayer.setAttribute("data-name", video.replace('.mp4', ''));  // <-- new
+          loopCount = 0;
+          maxLoops = infiniteLoopRadio.checked
+            ? Infinity
+            : parseInt(loopTimesInput.value, 10) || 1;
+          startButton.disabled = false;
+          loadingMessage.textContent = "Video loaded. Click 'Start' to begin.";
+        });
+        thumbnailsContainer.appendChild(videoElement);
+      });
+    }
+
+    async function loadMoveNet() {
+      try {
+        loadingMessage.textContent = "Loading pose detection model...";
+        const model = poseDetection.SupportedModels.MoveNet;
+        const detectorConfig = {
+          modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING,
+          modelUrl: 'public/models/movenet/model.json'
+        };
+        const detector = await poseDetection.createDetector(model, detectorConfig);
+
+        // Warm-up with a dummy image
+        const warmUpCanvas = document.createElement('canvas');
+        warmUpCanvas.width = 640;
+        warmUpCanvas.height = 480;
+        const ctx = warmUpCanvas.getContext('2d');
+        ctx.fillStyle = "black";
+        ctx.fillRect(0, 0, 640, 480);
+        const dummyImage = ctx.getImageData(0, 0, 640, 480);
+
+        await detector.estimatePoses(dummyImage);
+        console.log("Pose model warmed up");
+
+        loadingMessage.textContent = "Model loaded. Click 'Start Pose Detection' to begin.";
+        return detector;
+      } catch (error) {
+        console.error("Error loading model:", error);
+        loadingMessage.textContent = "Error loading model. Please refresh the page.";
+        throw error;
+      }
+    }
+
+    function setCanvasSize(canvas, element) {
+      canvas.width = element.videoWidth || element.width;
+      canvas.height = element.videoHeight || element.height;
+    }
+
+    async function startTracking() {
+      if (trackingActive) return;
+      if (!videoPlayer.src) {
+        loadingMessage.textContent = "Please select a video first";
+        loadingMessage.style.display = "block";
+        return;
+      }
+
+      try {
+        if (!poseDetector) {
+          loadingMessage.textContent = "Pose model not ready yet. Please wait...";
+          return;
+        }
+
+
+        // Reset tracking variables
+        trackingActive = true;
+        loopCount = 0;
+        currentLoop = 0;
+        loopData = [];
+        poseData = [];
+
+        startButton.style.display = "none";
+        stopButton.style.display = "block";
+        loadingMessage.textContent = "Pose detection running... Press Stop to end.";
+        generateGraphBtn.style.display = "none";
+
+        // Reset video
+        videoPlayer.currentTime = 0;
+        videoPlayer.play();
+        processPoseDetection();
+      } catch (error) {
+        console.error("Error starting tracking:", error);
+        loadingMessage.textContent = "Error starting pose detection. Please try again.";
+        loadingMessage.style.display = "block";
+      }
+    }
+
+    function stopTracking() {
+      if (!trackingActive) return;
+      trackingActive = false;
+
+      // Stop the video and reset it
+      videoPlayer.pause();
+      videoPlayer.currentTime = 0;
+
+      videoPlayer.removeAttribute('src');
+      videoPlayer.load();
+
+      // Remove the last incomplete loop if in infinite mode
+      if (infiniteLoopRadio.checked && loopCount > 0 && poseData.length > 0) {
+        poseData = []; // Discard incomplete loop data
+        loopCount--;   // Decrement count since we're not counting this partial loop
+      }
+
+      // Save any complete loops we have
+      if (loopData.length > 0) {
+        // No need to save anything here since we already saved complete loops
+      }
+
+      startButton.style.display = "block";
+      stopButton.style.display = "none";
+      cameraCtx.clearRect(0, 0, cameraCanvas.width, cameraCanvas.height);
+      loadingMessage.textContent = "Pose detection completed";
+      // Once tracking is done, compare loops
+      compareAllLoops().then(() => {
+        generateGraphBtn.style.display = 'block';
+        document.getElementById('exportDataBtn').style.display = 'block';
+        document.getElementById('loopSelectionContainer').style.display = 'block';
+        document.getElementById('comparisonResults').style.display = 'block';
+        displayOverallResults();
+      });
+    }
+
+    async function compareAllLoops() {
+      const videoName = videoPlayer.getAttribute("data-name");
+      const referenceFileName = `${videoName}_pose_data.json`;
+      try {
+        const response = await fetch(`${window.location.origin}/videos_data/${referenceFileName}`);
+        const referenceData = await response.json();
+
+        loopResults = [];
+        for (const loop of loopData) {
+          const results = await compareSingleLoop(loop.data, referenceData);
+          loopResults.push({ loopNumber: loop.loopNumber, results });
+        }
+        const overallResults = calculateOverallAverages(loopResults);
+        loopResults.push({ loopNumber: 'overall', results: overallResults });
+        populateLoopSelector();
+        return true;
+      } catch (error) {
+        console.error('Comparison error:', error);
+        return false;
+      }
+    }
+
+    async function compareSingleLoop(currentData, referenceData) {
+      const alignedCurrentData = normalizeDataLength(currentData, referenceData);
+      const results = [];
+      keypointNames.forEach((name, index) => {
+        const currentCoords = extractCoordinates(alignedCurrentData, index);
+        const referenceCoords = extractCoordinates(referenceData, index);
+
+        const xCorrelation = calculateCorrelation(
+          currentCoords.map(c => c.x),
+          referenceCoords.map(c => c.x)
+        );
+        const yCorrelation = calculateCorrelation(
+          currentCoords.map(c => c.y),
+          referenceCoords.map(c => c.y)
+        );
+
+        results.push({
+          name,
+          xCorrelation: isNaN(xCorrelation) ? 0 : xCorrelation,
+          yCorrelation: isNaN(yCorrelation) ? 0 : yCorrelation,
+          average: (xCorrelation + yCorrelation) / 2
+        });
+      });
+      return results;
+    }
+
+    function calculateOverallAverages(loopResults) {
+      const overallResults = [];
+      keypointNames.forEach((name, index) => {
+        let xSum = 0, ySum = 0, avgSum = 0;
+        let count = 0;
+        loopResults.forEach(loop => {
+          const r = loop.results[index];
+          xSum += r.xCorrelation;
+          ySum += r.yCorrelation;
+          avgSum += r.average;
+          count++;
+        });
+        overallResults.push({
+          name,
+          xCorrelation: xSum / count,
+          yCorrelation: ySum / count,
+          average: avgSum / count
+        });
+      });
+      return overallResults;
+    }
+
+    function populateLoopSelector() {
+      const selector = document.getElementById('loopSelector');
+      selector.innerHTML = '';
+      loopResults.forEach(loop => {
+        if (loop.loopNumber !== 'overall') {
+          const option = document.createElement('option');
+          option.value = loop.loopNumber;
+          option.textContent = `Loop ${loop.loopNumber}`;
+          selector.appendChild(option);
+        }
+      });
+      const overallOption = document.createElement('option');
+      overallOption.value = 'overall';
+      overallOption.textContent = 'Overall Results';
+      overallOption.selected = true;
+      selector.appendChild(overallOption);
+
+      selector.addEventListener('change', () => {
+        const selectedValue = selector.value;
+        if (selectedValue === 'overall') {
+          displayOverallResults();
+        } else {
+          displayLoopResults(parseInt(selectedValue));
+        }
+      });
+    }
+
+    function displayOverallResults() {
+      const overall = loopResults.find(loop => loop.loopNumber === 'overall');
+      if (overall) {
+        displayComparisonResults(overall.results, videoPlayer.src.split('/').pop().replace('.mp4', ''));
+      }
+    }
+
+    function displayLoopResults(loopNumber) {
+      const loop = loopResults.find(loop => loop.loopNumber === loopNumber);
+      if (loop) {
+        displayComparisonResults(loop.results, `${videoPlayer.src.split('/').pop().replace('.mp4', '')} (Loop ${loopNumber})`);
+      }
+    }
+
+    function displayComparisonResults(results, title) {
+      const resultsContent = document.getElementById('resultsContent');
+      resultsContent.innerHTML = `<h3 style="text-align: center; margin-top: 0;">${title}</h3>`;
+
+      if (!results || results.length === 0) {
+        resultsContent.innerHTML += '<p>No comparison results available</p>';
+        return;
+      }
+
+      const table = document.createElement('table');
+      table.style.width = '100%';
+      table.style.borderCollapse = 'collapse';
+      table.style.margin = '15px auto';
+
+      // Table header
+      const header = table.createTHead();
+      const headerRow = header.insertRow();
+      ['Body Part', 'X Correlation', 'Y Correlation', 'Average', 'Match'].forEach(text => {
+        const th = document.createElement('th');
+        th.textContent = text;
+        th.style.padding = '10px';
+        th.style.border = '1px solid #ddd';
+        th.style.textAlign = 'center';
+        th.style.backgroundColor = '#f2f2f2';
+        headerRow.appendChild(th);
+      });
+
+      // Table body
+      const tbody = table.createTBody();
+      results.forEach(result => {
+        const row = tbody.insertRow();
+        const nameCell = row.insertCell();
+        nameCell.textContent = result.name.replace('_', ' ').toUpperCase();
+
+        const xCell = row.insertCell();
+        xCell.textContent = result.xCorrelation.toFixed(3);
+
+        const yCell = row.insertCell();
+        yCell.textContent = result.yCorrelation.toFixed(3);
+
+        const avgCell = row.insertCell();
+        avgCell.textContent = result.average.toFixed(3);
+
+        const matchCell = row.insertCell();
+        const matchValue = result.average;
+        let matchText = '';
+        let color = '';
+        if (matchValue > 0.9) {
+          matchText = 'Excellent';
+          color = '#4CAF50';
+        } else if (matchValue > 0.7) {
+          matchText = 'Good';
+          color = '#8BC34A';
+        } else if (matchValue > 0.5) {
+          matchText = 'Fair';
+          color = '#FFC107';
+        } else {
+          matchText = 'Poor';
+          color = '#F44336';
+        }
+        matchCell.innerHTML = `${matchText} <br><span style="font-size: 12px; color: gray;">(${matchValue.toFixed(2)})</span>`;
+        matchCell.style.color = color;
+        matchCell.style.fontWeight = 'bold';
+
+        [nameCell, xCell, yCell, avgCell, matchCell].forEach(cell => {
+          cell.style.padding = '8px';
+          cell.style.border = '1px solid #ddd';
+          cell.style.textAlign = 'center';
+        });
+      });
+
+      resultsContent.appendChild(table);
+    }
+
+    async function processPoseDetection() {
+      setCanvasSize(cameraCanvas, cameraFeed);
+      previousFrame = null;
+      let lastProcessedTime = 0;
+      const processingInterval = 100; // ms between frames
+
+      async function detectPose() {
+        if (!trackingActive) return;
+        const now = Date.now();
+        if (now - lastProcessedTime < processingInterval) {
+          requestAnimationFrame(detectPose);
+          return;
+        }
+        lastProcessedTime = now;
+
+        try {
+          const poses = await poseDetector.estimatePoses(cameraFeed);
+          drawPoses(poses, cameraCtx, cameraFeed);
+
+          const currentFrame = captureFrame(cameraFeed);
+          let motion = false;
+          if (previousFrame) {
+            motion = detectMotion(previousFrame, currentFrame);
+          }
+          exportData(poses, motion);
+          previousFrame = currentFrame;
+        } catch (error) {
+          console.error("Error during pose detection:", error);
+        }
+        requestAnimationFrame(detectPose);
+      }
+      detectPose();
+    }
+
+    function drawPoses(poses, ctx, element) {
+      ctx.save();
+      ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+
+      // Mirror the canvas
+      ctx.translate(ctx.canvas.width, 0);
+      ctx.scale(-1, 1);
+
+      // Draw the mirrored video
+      ctx.drawImage(element, 0, 0, ctx.canvas.width, ctx.canvas.height);
+
+      const connections = [
+        [0, 1], [0, 2], [1, 3], [2, 4], [5, 6], [5, 7],
+        [7, 9], [6, 8], [8, 10], [5, 11], [6, 12],
+        [11, 12], [11, 13], [13, 15], [12, 14], [14, 16]
+      ];
+
+      poses.forEach(pose => {
+        pose.keypoints.forEach(keypoint => {
+          if (keypoint.score > 0.5) {
+            ctx.beginPath();
+            ctx.arc(keypoint.x, keypoint.y, 5, 0, 2 * Math.PI);
+            ctx.fillStyle = 'red';
+            ctx.fill();
+          }
+        });
+        connections.forEach(([startIdx, endIdx]) => {
+          const start = pose.keypoints[startIdx];
+          const end = pose.keypoints[endIdx];
+          if (start.score > 0.5 && end.score > 0.5) {
+            ctx.beginPath();
+            ctx.moveTo(start.x, start.y);
+            ctx.lineTo(end.x, end.y);
+            ctx.strokeStyle = 'green';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+          }
+        });
+      });
+
+      ctx.restore(); // Restore original canvas transform
+    }
+
+    function captureFrame(element) {
+      const c = document.createElement('canvas');
+      c.width = element.videoWidth || element.width;
+      c.height = element.videoHeight || element.height;
+      const ctx = c.getContext('2d');
+      ctx.drawImage(element, 0, 0, c.width, c.height);
+      return ctx.getImageData(0, 0, c.width, c.height);
+    }
+
+    function detectMotion(previousFrame, currentFrame) {
+      const prevData = previousFrame.data;
+      const currData = currentFrame.data;
+      for (let i = 0; i < prevData.length; i += 4) {
+        const diff = Math.abs(prevData[i] - currData[i])
+          + Math.abs(prevData[i + 1] - currData[i + 1])
+          + Math.abs(prevData[i + 2] - currData[i + 2]);
+        if (diff > 50) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    function calculateCorrelation(x, y) {
+      const n = x.length;
+      let sumX = 0, sumY = 0, sumXY = 0;
+      let sumX2 = 0, sumY2 = 0;
+      for (let i = 0; i < n; i++) {
+        sumX += x[i];
+        sumY += y[i];
+        sumXY += x[i] * y[i];
+        sumX2 += x[i] * x[i];
+        sumY2 += y[i] * y[i];
+      }
+      const numerator = sumXY - (sumX * sumY) / n;
+      const denomX = Math.sqrt((sumX2 - (sumX * sumX) / n));
+      const denomY = Math.sqrt((sumY2 - (sumY * sumY) / n));
+      return numerator / (denomX * denomY);
+    }
+
+    function extractCoordinates(poseData, keypointIndex) {
+      return poseData.map(frame => {
+        const kp = frame.poses[0]?.keypoints[keypointIndex];
+        return {
+          x: cameraCanvas.width - (kp?.x || 0), // MIRRORED X
+          y: kp?.y || 0
+        };
+      });
+    }
+
+    window.addEventListener('load', async () => {
+      updateLoopMode();
+      await startCamera();
+      await loadVideoList();
+
+      await tf.setBackend('webgl');
+      await tf.ready();
+      console.log("TFJS Backend:", tf.getBackend());
+
+      loadMoveNet().then(detector => {
+        poseDetector = detector;
+      }).catch(error => {
+        console.error("Model loading failed:", error);
+      });
+    });
+    // Initialize
+    startButton.addEventListener("click", startTracking);
+    stopButton.addEventListener("click", stopTracking);
+    infiniteLoopRadio.addEventListener('change', updateLoopMode);
+    fixedLoopRadio.addEventListener('change', updateLoopMode);
+    loopTimesInput.addEventListener('input', updateLoopMode);
+    generateGraphBtn.addEventListener('click', generateGraphs);
+    document.getElementById('exportDataBtn').addEventListener('click', exportDataAsJSON);
+
+    async function initializeApp() {
+      updateLoopMode();
+      await startCamera();
+      await loadVideoList();
+
+      await tf.setBackend('webgl');
+      await tf.ready();
+      console.log("TFJS Backend:", tf.getBackend());
+
+      try {
+        loadingMessage.textContent = "Loading pose detection model...";
+        poseDetector = await loadMoveNet(); // Προφόρτωση MoveNet
+        loadingMessage.textContent = "Model loaded. Click 'Start' to begin.";
+      } catch (error) {
+        console.error("Model loading failed:", error);
+        loadingMessage.textContent = "Error loading pose model. Please refresh.";
+      }
+    }
+
+    window.addEventListener('load', initializeApp);
+  </script>
+</body>
+
+</html>
