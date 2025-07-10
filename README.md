@@ -1,93 +1,144 @@
-Pose Analysis Application - Technical Documentation
+# 🧍‍♂️ Pose Analysis Application
 
-Overview
-The Pose Analysis Application is an Electron-based desktop tool that enables real-time human pose detection, comparison, and movement analysis through computer vision and machine learning. The application combines video processing with live camera feed analysis to provide comprehensive biomechanical feedback.
+An Electron-based desktop tool for **real-time human pose detection**, **motion comparison**, and **biomechanical analysis** using computer vision and machine learning.
 
+---
 
-Core Functionalities
+## 🚀 Overview
 
- 1. Dual-View Interface
-- Video Reference Panel: Plays instructional/demonstration videos in a loopable player
-- Camera Capture Panel: Processes real-time webcam feed with pose detection overlay
-- Synchronized visualization of both reference and user performance
+The **Pose Analysis Application** leverages **TensorFlow\.js** and **MoveNet** to deliver synchronized pose tracking and motion comparison. Ideal for **sports training**, **rehabilitation**, **fitness coaching**, and **research**, the application provides both **visual feedback** and **quantitative performance metrics**.
 
- 2. Pose Detection System
-- Implements TensorFlow.js with MoveNet model (singlepose lightning variant)
-- Tracks 17 key body points (nose, eyes, shoulders, elbows, wrists, hips, knees, ankles)
-- Provides real-time skeletal overlay on both video and camera feeds
-- Mirrors camera input for more intuitive movement matching
+---
 
- 3. Motion Analysis Features
-- Frame-by-frame tracking: Captures body positions at 30fps
-- Movement correlation: Compares user motion to reference video
-- Time-normalization: Aligns motion data of different durations for accurate comparison
-- Motion detection: Identifies active movement periods vs static poses
+## 🖥️ Core Functionalities
 
- 4. Performance Evaluation
-- Quantitative metrics:
-  - X/Y position correlation coefficients (Pearson)
-  - Average positional accuracy scores
-  - Movement timing analysis
-- Qualitative assessment:
-  - Color-coded performance ratings (Excellent, Good, Fair, Poor)
-  - Body-part specific feedback
+### 🔀 Dual-View Interface
 
- 5. Data Visualization
-- Interactive charts:
-  - Time-series graphs of X/Y positions for each body part
-  - Side-by-side comparison of multiple attempts
-  - Aggregate performance across sessions
-- Tabular results:
-  - Detailed numerical scores per body joint
-  - Loop-by-loop progression tracking
+* **Video Reference Panel**
+  Loopable instructional/demo video player
+* **Camera Capture Panel**
+  Real-time webcam with pose detection overlay
+* **Synchronized Visualization**
+  Side-by-side display of reference and live feed for intuitive comparison
 
- 6. Data Management
-- Video library: Thumbnail-based selection of reference materials
-- Loop analysis: Supports both infinite and fixed-repeat video playback
-- Export capabilities:
-  - JSON export of raw pose data
-  - Complete session results with timestamps
-  - Statistical summaries
+### 🧠 Pose Detection System
 
- Technical Architecture
-- Frontend: Electron.js with HTML5/CSS/JS
-- Computer Vision: TensorFlow.js with WebGL acceleration
-- Data Processing: Client-side JavaScript with Chart.js visualization
-- Local Server: Embedded Express.js for file management
+* Built on **TensorFlow\.js** with **MoveNet (SinglePose Lightning)**
+* Tracks **17 body keypoints**:
 
-Target Use Cases
-1. Sports Training: Golf swings, tennis serves, baseball pitching form analysis
-2. Physical Therapy: Rehabilitation exercise monitoring
-3. Dance Instruction: Movement precision evaluation
-4. Fitness Coaching: Exercise form correction
-5. Research Applications: Biomechanical movement studies
+  * Nose, eyes, shoulders, elbows, wrists
+  * Hips, knees, ankles
+* Real-time **skeletal overlays**
+* **Mirrored camera input** for easier mimicry
 
-User Workflow (Pose analysis - 1st tab)
-1. Select reference video from library
-2. Configure loop settings (infinite/fixed)
+---
+
+## 📊 Motion Analysis Features
+
+* **Frame-by-frame tracking** at **30 FPS**
+* **Time-normalized motion comparison** (different durations aligned)
+* **Active vs Static movement detection**
+* **Movement correlation analysis** to reference video
+
+---
+
+## 📈 Performance Evaluation
+
+### 🔢 Quantitative Metrics
+
+* **X/Y Position Correlation** using Pearson coefficient
+* **Average Positional Accuracy**
+* **Movement Timing Metrics**
+
+### 🎨 Qualitative Assessment
+
+* **Color-coded feedback**:
+  *Excellent*, *Good*, *Fair*, *Poor*
+* **Joint-specific analysis and guidance**
+
+---
+
+## 📉 Data Visualization
+
+* **Interactive Graphs** (Chart.js):
+
+  * Time-series of joint X/Y positions
+  * Compare multiple attempts side-by-side
+  * Track performance across sessions
+* **Tabular Scores** for each joint
+* **Loop Progression View** for repeated exercises
+
+---
+
+## 🗃️ Data Management
+
+* **Video Library** with thumbnails
+* **Loop Playback Options**: Infinite or fixed
+* **Export Options**:
+
+  * Raw Pose Data (`.json`)
+  * Complete session data with timestamps
+  * Summary statistics for historical comparison
+
+---
+
+## 🧱 Technical Architecture
+
+* **Frontend**: Electron.js with HTML5, CSS, and JavaScript
+* **Computer Vision**: TensorFlow\.js accelerated with WebGL
+* **Data Processing & Visualization**:
+
+  * JavaScript for computation
+  * Chart.js for visual output
+* **Local Server**: Embedded Express.js for file handling
+
+---
+
+## 🏋️‍♂️ Target Use Cases
+
+* **Sports Training**: Golf swings, tennis serves, baseball pitching
+* **Physical Therapy**: Rehab progress tracking
+* **Dance Instruction**: Movement precision evaluation
+* **Fitness Coaching**: Form correction and guidance
+* **Research**: Biomechanical movement analysis
+
+---
+
+## 🔄 User Workflow
+
+### 1️⃣ Pose Analysis Tab
+
+1. Select a reference video from the library
+2. Configure loop mode (Infinite / Fixed)
 3. Start synchronized recording
-4. View real-time pose comparison
-5. Analyze performance metrics
-6. Export data for further review
+4. Observe real-time pose overlay and comparison
+5. Review performance metrics
+6. Export results for analysis
 
-User Workflow (Video analysis - 2nd tab)
-1. Upload Reference Video
-2. Press play and wait for processing
-3. Export Results (Export data) 
+### 2️⃣ Video Analysis Tab
 
-Performance Characteristics
-- Processes video at native resolution (typically 720p)
-- Operates at 10-30fps depending on hardware capabilities
-- Supports sessions with unlimited duration (memory-dependent)
-- Maintains historical data for multi-session comparison
+1. Upload a reference video
+2. Press **Play** and wait for processing
+3. **Export** the results using the Export button
 
-The application provides immediate visual feedback while generating comprehensive quantitative data for professional review, making it suitable for both real-time coaching and post-session analysis.
+> **⚠️ Important:**
+> **You must export the data from the Video Analysis tab before performing any further analysis.**
+> Steps:
+>
+> * Add the exercises you want to analyze
+> * Run the analysis
+> * Go to the **Video Analysis** tab
+> * Click **Export**
+>
+> ❗ This step is **mandatory** for downstream analysis
 
-Important: You must export the data from the Video Analysis app (2nd tab) before any analysis can be performed.
-Required Steps:
-1. Add the exercises you want to analyze.
-2. Run the analysis on the added exercises.
-3. Go to the second tab in the app.
-4. Press the Export button to export the data.
-Without exporting, you will not be able to proceed with the analysis. This step is mandatory.
+---
+
+## ⚙️ Performance Characteristics
+
+* Processes video at **native resolution** (typically 720p)
+* Operates at **10–30 FPS**, hardware-dependent
+* Supports **unlimited session durations** (memory permitting)
+* Maintains **multi-session history** for progress tracking
+* Provides **instant visual feedback** with detailed quantitative analysis
 
